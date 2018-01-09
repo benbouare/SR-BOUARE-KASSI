@@ -2,6 +2,8 @@
 package client;
 
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.net.MalformedURLException;
@@ -15,7 +17,7 @@ import serveur.serveurInterface;
 
 public class clientImpl extends java.rmi.server.UnicastRemoteObject implements clientInterface,Runnable{
 
-    public Fenetre fenetre;
+    public Accueil accueil;
     public serveurInterface serveur;
     private ArrayList<clientInterface> clients;
     KeyAdapter keyAdapter;
@@ -29,8 +31,8 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
     
     public void initialisation(){
         //serveur.connecter(this, this.fenetre.grid.getMonJoueur());
-        fenetre = new Fenetre();
         clients = new ArrayList<clientInterface>();
+        accueil = new Accueil();
         keyAdapter = new KeyAdapter(){
             public void keyPressed(KeyEvent e){
                 Point p = null;
@@ -55,51 +57,51 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
                 }
             } 
         };
-        fenetre.addKeyListener(keyAdapter);
+        accueil.fenetre.addKeyListener(keyAdapter);
     }
     
     private Point allerEnBas() {
-        int y = fenetre.grid.monJoueur.position.y;
+        int y = accueil.fenetre.grid.monJoueur.position.y;
         if ((y + 2 * Constante.tailleElement) > Constante.tailleEcran + Constante.decallageEcran) {
             y = Constante.decallageEcran;
         } else {
             y += Constante.tailleElement;
         }
-        return new Point(fenetre.grid.monJoueur.position.x, y);
+        return new Point(accueil.fenetre.grid.monJoueur.position.x, y);
     }
 
     private Point allerEnHaut() {
-        int y = fenetre.grid.monJoueur.position.y;
+        int y = accueil.fenetre.grid.monJoueur.position.y;
         if (y - Constante.tailleElement < Constante.decallageEcran) {
             y = Constante.tailleEcran + Constante.decallageEcran - Constante.tailleElement;
         } else {
             y -= Constante.tailleElement;
         }
-        return new Point(fenetre.grid.monJoueur.position.x, y);
+        return new Point(accueil.fenetre.grid.monJoueur.position.x, y);
     }
 
     private Point allerADroite() {
-        int x = fenetre.grid.monJoueur.position.x;
+        int x = accueil.fenetre.grid.monJoueur.position.x;
         if ((x + 2 * Constante.tailleElement) > Constante.tailleEcran + Constante.decallageEcran) {
             x = Constante.decallageEcran;
         } else {
             x += Constante.tailleElement;
         }
-        return new Point(x, fenetre.grid.monJoueur.position.y);
+        return new Point(x, accueil.fenetre.grid.monJoueur.position.y);
     }
 
     private Point allerAGauche() {
-        int x = fenetre.grid.monJoueur.position.x;
+        int x = accueil.fenetre.grid.monJoueur.position.x;
         if (x - Constante.tailleElement < Constante.decallageEcran) {
             x = Constante.tailleEcran + Constante.decallageEcran - Constante.tailleElement;
         } else {
             x -= Constante.tailleElement;
         }
-        return new Point(x, fenetre.grid.monJoueur.position.y);
+        return new Point(x, accueil.fenetre.grid.monJoueur.position.y);
     }
     public void deplacer(Point p){
         try {
-            serveur.seDeplacer(this, fenetre.grid.getMonJoueur(), p);
+            serveur.seDeplacer(this, accueil.fenetre.grid.getMonJoueur(), p);
         } catch (RemoteException ex) {
             System.out.println("Erreur déplacement client : "+ex);
         }
@@ -122,19 +124,19 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
         this.clients.clear();
         this.clients.addAll(clients);
         if(j != null){
-            fenetre.grid.setMonJoueur(j);
-            fenetre.grid.repaint();
+            accueil.fenetre.grid.setMonJoueur(j);
+            accueil.fenetre.grid.repaint();
         }
     }
 
     @Override
     public void diffuserDeplacement(Joueur j, ArrayList<Joueur> joueurs, ArrayList<Point> bonbons) throws RemoteException {
         if(j != null){
-            fenetre.grid.setMonJoueur(j);
+            accueil.fenetre.grid.setMonJoueur(j);
         }
-        fenetre.grid.setListeBonbon(bonbons);
-        fenetre.grid.setListeJoueur(joueurs);
-        fenetre.grid.repaint();
+        accueil.fenetre.grid.setListeBonbon(bonbons);
+        accueil.fenetre.grid.setListeJoueur(joueurs);
+        accueil.fenetre.grid.repaint();
     }
     
     public static void main(String[] args) throws RemoteException, NotBoundException, MalformedURLException {
@@ -146,7 +148,7 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
     @Override
     public void run() {
         try {
-            serveur.connecter(this, fenetre.grid.getMonJoueur());
+            serveur.connecter(this, accueil.fenetre.grid.getMonJoueur());
         } catch (RemoteException ex) {
             Logger.getLogger(clientImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
