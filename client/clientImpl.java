@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -17,10 +19,13 @@ import serveur.serveurInterface;
 
 public class clientImpl extends java.rmi.server.UnicastRemoteObject implements clientInterface,Runnable{
 
-    public Accueil accueil;
+    public Fenetre fenetre;
     public serveurInterface serveur;
     private ArrayList<clientInterface> clients;
+    WindowAdapter windowAdapter;
     KeyAdapter keyAdapter;
+    public static boolean pretAjouer = false;
+    public static boolean enJeu = false;
     
     public clientImpl(serveurInterface serv) throws RemoteException, NotBoundException, MalformedURLException{
         
@@ -32,7 +37,15 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
     public void initialisation(){
         //serveur.connecter(this, this.fenetre.grid.getMonJoueur());
         clients = new ArrayList<clientInterface>();
-        accueil = new Accueil();
+        fenetre = new Fenetre();
+        
+        windowAdapter = new WindowAdapter(){
+            public void windowClosing(WindowEvent e){
+                deconnecter();
+             }
+        };
+        fenetre.addWindowListener(windowAdapter);
+        
         keyAdapter = new KeyAdapter(){
             public void keyPressed(KeyEvent e){
                 Point p = null;
@@ -57,51 +70,60 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
                 }
             } 
         };
-        accueil.fenetre.addKeyListener(keyAdapter);
+        fenetre.addKeyListener(keyAdapter);
     }
     
     private Point allerEnBas() {
-        int y = accueil.fenetre.grid.monJoueur.position.y;
+        int y = fenetre.grid.monJoueur.position.y;
         if ((y + 2 * Constante.tailleElement) > Constante.tailleEcran + Constante.decallageEcran) {
             y = Constante.decallageEcran;
         } else {
             y += Constante.tailleElement;
         }
-        return new Point(accueil.fenetre.grid.monJoueur.position.x, y);
+        return new Point(fenetre.grid.monJoueur.position.x, y);
     }
 
     private Point allerEnHaut() {
-        int y = accueil.fenetre.grid.monJoueur.position.y;
+        int y = fenetre.grid.monJoueur.position.y;
         if (y - Constante.tailleElement < Constante.decallageEcran) {
             y = Constante.tailleEcran + Constante.decallageEcran - Constante.tailleElement;
         } else {
             y -= Constante.tailleElement;
         }
-        return new Point(accueil.fenetre.grid.monJoueur.position.x, y);
+        return new Point(fenetre.grid.monJoueur.position.x, y);
     }
 
     private Point allerADroite() {
-        int x = accueil.fenetre.grid.monJoueur.position.x;
+        int x = fenetre.grid.monJoueur.position.x;
         if ((x + 2 * Constante.tailleElement) > Constante.tailleEcran + Constante.decallageEcran) {
             x = Constante.decallageEcran;
         } else {
             x += Constante.tailleElement;
         }
-        return new Point(x, accueil.fenetre.grid.monJoueur.position.y);
+        return new Point(x, fenetre.grid.monJoueur.position.y);
     }
 
     private Point allerAGauche() {
-        int x = accueil.fenetre.grid.monJoueur.position.x;
+        int x = fenetre.grid.monJoueur.position.x;
         if (x - Constante.tailleElement < Constante.decallageEcran) {
             x = Constante.tailleEcran + Constante.decallageEcran - Constante.tailleElement;
         } else {
             x -= Constante.tailleElement;
         }
-        return new Point(x, accueil.fenetre.grid.monJoueur.position.y);
+        return new Point(x, fenetre.grid.monJoueur.position.y);
     }
+    
+    public void deconnecter(){
+        try {
+            serveur.deconnecter(this, fenetre.grid.getMonJoueur());
+        } catch (RemoteException ex) {
+            System.out.println("Erreur déconnexion : "+ex);
+        }
+    }
+    
     public void deplacer(Point p){
         try {
-            serveur.seDeplacer(this, accueil.fenetre.grid.getMonJoueur(), p);
+            serveur.seDeplacer(this, fenetre.grid.getMonJoueur(), p);
         } catch (RemoteException ex) {
             System.out.println("Erreur déplacement client : "+ex);
         }
@@ -124,19 +146,19 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
         this.clients.clear();
         this.clients.addAll(clients);
         if(j != null){
-            accueil.fenetre.grid.setMonJoueur(j);
-            accueil.fenetre.grid.repaint();
+            fenetre.grid.setMonJoueur(j);
+            fenetre.grid.repaint();
         }
     }
 
     @Override
     public void diffuserDeplacement(Joueur j, ArrayList<Joueur> joueurs, ArrayList<Point> bonbons) throws RemoteException {
         if(j != null){
-            accueil.fenetre.grid.setMonJoueur(j);
+            fenetre.grid.setMonJoueur(j);
         }
-        accueil.fenetre.grid.setListeBonbon(bonbons);
-        accueil.fenetre.grid.setListeJoueur(joueurs);
-        accueil.fenetre.grid.repaint();
+        fenetre.grid.setListeBonbon(bonbons);
+        fenetre.grid.setListeJoueur(joueurs);
+        fenetre.grid.repaint();
     }
     
     public static void main(String[] args) throws RemoteException, NotBoundException, MalformedURLException {
@@ -148,9 +170,10 @@ public class clientImpl extends java.rmi.server.UnicastRemoteObject implements c
     @Override
     public void run() {
         try {
-            serveur.connecter(this, accueil.fenetre.grid.getMonJoueur());
+            serveur.connecter(this, fenetre.grid.getMonJoueur());
+            pretAjouer = true;
         } catch (RemoteException ex) {
-            Logger.getLogger(clientImpl.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Erreur connexion : "+ex);
         }
     }
 }

@@ -3,6 +3,7 @@ package serveur;
 
 import client.Constante;
 import client.Joueur;
+import client.clientImpl;
 import client.clientInterface;
 import java.awt.Color;
 import java.awt.Point;
@@ -19,15 +20,14 @@ public class serveurImpl extends java.rmi.server.UnicastRemoteObject implements 
     private ArrayList<Point> listeBonbon = new ArrayList<Point>();
     private Point[] positionJoueur = new Point[2];
     private Color[] couleurJoueur = new Color[2];
-    private int nombreBonbons = 10;
     
     public serveurImpl()throws RemoteException{
         super();
         positionJoueur[0] = new Point(0, 0);
-        positionJoueur[1] = new Point(Constante.tailleEcran - Constante.tailleElement, Constante.tailleEcran - 100 - Constante.tailleElement);
+        positionJoueur[1] = new Point(Constante.tailleEcran - Constante.tailleElement, Constante.tailleEcran - Constante.tailleElement);
         
         couleurJoueur[0] = Color.BLUE;
-        couleurJoueur[1] = Color.GREEN;
+        couleurJoueur[1] = Color.darkGray;
     }
     
     public ArrayList<Joueur> getListeJoueur() {
@@ -66,8 +66,21 @@ public class serveurImpl extends java.rmi.server.UnicastRemoteObject implements 
             }
             System.out.println("Il y'a "+listeClient.size()+" clients connectés");
             if(listeClient.size() == 2){
+                //clientImpl.enJeu = true;
                 initialisation();
             }
+        }
+        lock.unlock();
+    }
+    
+    @Override
+    public void deconnecter(clientInterface client, Joueur j) throws RemoteException {
+        lock.lock();
+        if(listeClient.contains(client)){
+            listeClient.remove(client);
+            for(clientInterface clt : listeClient){
+                    clt.diffuserJoueur(listeClient, null);
+                }
         }
         lock.unlock();
     }
@@ -111,7 +124,7 @@ public class serveurImpl extends java.rmi.server.UnicastRemoteObject implements 
         //générer les bonbons au hasard
         int x, y;
 	Random r = new Random();
-        for (int i = 0; i < nombreBonbons; i++) {
+        for (int i = 0; i < Constante.nombreBonbons; i++) {
             Point point = null;
             boolean bool = false;
             while (!bool) {
